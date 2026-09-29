@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101a31">
+  <title>Cloud Services &amp; Deployment — Checkpoints 0–6</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #16213a;
+      --muted: #65718a;
+      --navy: #101a31;
+      --blue: #4361ee;
+      --cyan: #56d6d0;
+      --paper: #f5f7fb;
+      --line: #e5eaf2;
+      --white: #fff;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { width: 100%; height: 100%; margin: 0; }
+
+    body {
+      overflow: hidden;
+      background:
+        radial-gradient(ellipse at 15% 12%, rgba(67, 97, 238, .12), transparent 34%),
+        radial-gradient(ellipse at 88% 85%, rgba(86, 214, 208, .11), transparent 31%),
+        #edf1f8;
+      color: var(--ink);
+      font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button { font: inherit; }
+
+    .deck {
+      display: grid;
+      grid-template-rows: 70px minmax(0, 1fr) 76px;
+      width: min(100%, 1600px);
+      height: 100dvh;
+      margin: 0 auto;
+      padding: 0 clamp(18px, 4vw, 64px);
+    }
+
+    .topbar, .bottom-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      color: var(--navy);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 31px;
+      height: 31px;
+      place-items: center;
+      border-radius: 10px;
+      background: var(--navy);
+      color: white;
+      font-size: 12px;
+      letter-spacing: -.04em;
+    }
+
+    .top-meta {
+      color: #7b8599;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .icon-button, .arrow-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(22, 33, 58, .12);
+      background: rgba(255,255,255,.74);
+      color: var(--navy);
+      cursor: pointer;
+      transition: transform .18s ease, background .18s ease, border-color .18s ease;
+    }
+
+    .icon-button:hover, .arrow-button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      border-color: rgba(67, 97, 238, .4);
+      background: white;
+    }
+
+    .icon-button:focus-visible, .arrow-button:focus-visible, .dot:focus-visible {
+      outline: 3px solid rgba(67,97,238,.42);
+      outline-offset: 3px;
+    }
+
+    .icon-button {
+      gap: 9px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .icon-button svg { width: 15px; height: 15px; }
+
+    .stage {
+      position: relative;
+      min-height: 0;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.9);
+      border-radius: 25px;
+      background: rgba(255,255,255,.52);
+      box-shadow: 0 26px 80px rgba(25, 40, 75, .12), 0 3px 12px rgba(25,40,75,.04);
+      backdrop-filter: blur(12px);
+    }
+
+    .slide {
+      display: none;
+      height: 100%;
+      min-height: 0;
+      overflow: auto;
+      padding: clamp(24px, 4vw, 58px) clamp(22px, 5vw, 72px) 28px;
+      animation: enter .32s ease both;
+    }
+
+    .slide.active { display: flex; flex-direction: column; }
+
+    @keyframes enter {
+      from { opacity: 0; transform: translateX(15px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--blue);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .17em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      width: 22px;
+      height: 2px;
+      border-radius: 2px;
+      background: var(--cyan);
+      content: "";
+    }
+
+    h1 {
+      margin: 13px 0 7px;
+      color: var(--navy);
+      font-size: clamp(32px, 4.4vw, 58px);
+      font-weight: 760;
+      letter-spacing: -.055em;
+      line-height: 1.03;
+    }
+
+    .subtitle {
+      max-width: 780px;
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(14px, 1.45vw, 18px);
+      line-height: 1.55;
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .88fr) minmax(0, 1.4fr);
+      gap: 16px;
+      margin-top: clamp(20px, 3vw, 34px);
+    }
+
+    .panel {
+      min-width: 0;
+      padding: clamp(19px, 2.5vw, 30px);
+      border: 1px solid var(--line);
+      border-radius: 17px;
+      background: var(--white);
+    }
+
+    .problem {
+      position: relative;
+      overflow: hidden;
+      border-color: transparent;
+      background: var(--navy);
+      color: white;
+    }
+
+    .problem::after {
+      position: absolute;
+      right: -34px;
+      bottom: -76px;
+      width: 190px;
+      height: 190px;
+      border: 1px solid rgba(86,214,208,.22);
+      border-radius: 50%;
+      box-shadow: 0 0 0 22px rgba(86,214,208,.035), 0 0 0 46px rgba(86,214,208,.025);
+      content: "";
+    }
+
+    .panel-label {
+      margin-bottom: 16px;
+      color: var(--cyan);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .17em;
+      text-transform: uppercase;
+    }
+
+    .solution .panel-label { color: var(--blue); }
+
+    .problem p {
+      position: relative;
+      z-index: 1;
+      margin: 0;
+      font-size: clamp(15px, 1.55vw, 19px);
+      font-weight: 520;
+      line-height: 1.55;
+    }
+
+    .solution ul {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .solution li {
+      position: relative;
+      padding-left: 22px;
+      color: #35415a;
+      font-size: clamp(14px, 1.35vw, 17px);
+      line-height: 1.45;
+    }
+
+    .solution li::before {
+      position: absolute;
+      top: .53em;
+      left: 0;
+      width: 8px;
+      height: 8px;
+      border: 2px solid var(--cyan);
+      border-radius: 50%;
+      content: "";
+    }
+
+    .outcome {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      align-items: center;
+      gap: 18px;
+      margin-top: 15px;
+      padding: 17px 23px;
+      border: 1px solid rgba(67,97,238,.12);
+      border-radius: 15px;
+      background: linear-gradient(100deg, rgba(67,97,238,.07), rgba(86,214,208,.09));
+    }
+
+    .outcome-label {
+      color: var(--blue);
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .outcome p {
+      margin: 0;
+      color: #25314b;
+      font-size: clamp(13px, 1.28vw, 16px);
+      font-weight: 600;
+      line-height: 1.45;
+    }
+
+    .status-note {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      width: fit-content;
+      margin-top: 11px;
+      padding: 6px 10px;
+      border: 1px solid #f0d9a1;
+      border-radius: 999px;
+      background: #fff8e7;
+      color: #8a5a00;
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .status-note::before {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #e0a126;
+      content: "";
+    }
+
+    .bottom-bar { gap: 20px; }
+
+    .progress-wrap {
+      display: flex;
+      flex: 1;
+      align-items: center;
+      gap: 14px;
+      max-width: 420px;
+    }
+
+    .progress-track {
+      height: 4px;
+      flex: 1;
+      overflow: hidden;
+      border-radius: 9px;
+      background: rgba(22,33,58,.12);
+    }
+
+    .progress-fill {
+      width: 14.285%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--blue), var(--cyan));
+      transition: width .25s ease;
+    }
+
+    .counter {
+      min-width: 49px;
+      color: var(--muted);
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+      font-weight: 750;
+    }
+
+    .dots { display: flex; align-items: center; gap: 7px; }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      padding: 0;
+      border: 0;
+      border-radius: 999px;
+      background: #c7cfdd;
+      cursor: pointer;
+      transition: width .2s ease, background .2s ease;
+    }
+
+    .dot.active { width: 23px; background: var(--blue); }
+
+    .nav-buttons { display: flex; gap: 9px; }
+
+    .arrow-button {
+      width: 43px;
+      height: 43px;
+      border-radius: 50%;
+    }
+
+    .arrow-button:disabled { opacity: .4; cursor: default; }
+    .arrow-button svg { width: 17px; height: 17px; }
+
+    .hint {
+      color: #8992a3;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    @media (min-width: 1300px) and (min-height: 820px) {
+      .content-grid { margin-top: 42px; }
+      .panel { min-height: 245px; }
+      .solution ul { gap: 15px; }
+    }
+
+    @media (max-width: 760px) {
+      .deck { grid-template-rows: 60px minmax(0, 1fr) 68px; padding: 0 12px; }
+      .top-meta, .hint, .dots { display: none; }
+      .brand { font-size: 10px; }
+      .stage { border-radius: 18px; }
+      .slide { padding: 24px 19px 20px; }
+      h1 { font-size: clamp(30px, 9vw, 46px); }
+      .content-grid { grid-template-columns: 1fr; gap: 11px; margin-top: 21px; }
+      .panel { padding: 19px; }
+      .problem p { font-size: 15px; }
+      .solution li { font-size: 14px; }
+      .outcome { grid-template-columns: 1fr; gap: 5px; padding: 14px 17px; }
+      .bottom-bar { gap: 10px; }
+      .progress-wrap { max-width: none; gap: 8px; }
+      .arrow-button { width: 39px; height: 39px; }
+      .icon-button { padding: 9px 11px; }
+      .fullscreen-label { display: none; }
+    }
+
+    @media (max-height: 680px) and (min-width: 761px) {
+      .deck { grid-template-rows: 55px minmax(0, 1fr) 57px; }
+      .slide { padding-top: 24px; padding-bottom: 18px; }
+      h1 { font-size: clamp(30px, 3.5vw, 44px); margin-top: 9px; }
+      .content-grid { margin-top: 17px; }
+      .panel { padding: 18px 22px; }
+      .solution ul { gap: 7px; }
+      .outcome { margin-top: 10px; padding: 12px 18px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="deck" aria-label="Bài trình bày Cloud Services và Deployment">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">C</span><span>Cloud services / deployment</span></div>
+      <div class="top-meta">Problem → Solution · CP 0—6</div>
+      <button class="icon-button" id="fullscreenButton" type="button" aria-label="Bật toàn màn hình">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 1-2 2h-3"/></svg>
+        <span class="fullscreen-label">Toàn màn hình</span>
+      </button>
+    </header>
+
+    <main class="stage" id="stage" aria-live="polite">
+      <section class="slide active" data-title="Chuẩn bị môi trường" aria-label="Slide 1: CP0 — Chuẩn bị môi trường">
+        <div class="eyebrow">Checkpoint 00 · Foundation</div>
+        <h1>Chuẩn bị môi trường</h1>
+        <p class="subtitle">Tạo nền tảng ổn định trước khi bắt đầu triển khai service.</p>
+        <div class="content-grid">
+          <article class="panel problem"><div class="panel-label">Vấn đề</div><p>Mỗi máy có thể khác Python, thư viện và cấu hình. Thiếu dependency hoặc cấu hình sai khiến ứng dụng không chạy ngay từ đầu.</p></article>
+          <article class="panel solution"><div class="panel-label">Tôi xử lý như thế nào</div><ul>
+            <li>Tạo repository cá nhân đúng tên và cài dependency trong môi trường ảo Python.</li>
+            <li>Tạo <code>.env</code> từ <code>.env.example</code>; giữ API key ngoài Git.</li>
+            <li>Khởi động Redis hoặc dùng Redis giả để bắt đầu khi chưa có Docker.</li>
+          </ul></article>
+        </div>
+        <div class="outcome"><div class="outcome-label">Kết quả</div><p>Môi trường sẵn sàng chạy ứng dụng và kiểm tra từng checkpoint. Test chức năng còn lỗi trước khi viết code là điều dự kiến; mục tiêu CP0 là pytest chạy được và báo lỗi rõ ràng.</p></div>
+      </section>
+
+      <section class="slide" data-title="Cấu hình, health và logging" aria-label="Slide 2: CP1 — Cấu hình, health và logging">
+        <div class="eyebrow">Checkpoint 01 · Configuration &amp; observability</div>
+        <h1>Cấu hình, health &amp; logging</h1>
+        <p class="subtitle">Tách cấu hình khỏi code và giúp service dễ chẩn đoán khi chạy trên cloud.</p>
+        <div class="content-grid">
+          <article class="panel problem"><div class="panel-label">Vấn đề</div><p>Hardcode secret gây rủi ro khi deploy. Log <code>print()</code> khó lọc; health check phụ thuộc Redis có thể khiến service bị restart khi Redis chỉ tạm lỗi.</p></article>
+          <article class="panel solution"><div class="panel-label">Tôi xử lý như thế nào</div><ul>
+            <li>Đọc cấu hình từ biến môi trường theo nguyên tắc 12-Factor.</li>
+            <li>Bắt buộc có <code>AGENT_API_KEY</code> để phát hiện thiếu secret ngay lúc khởi động.</li>
+            <li>Ghi log theo từng dòng JSON; dùng <code>/health</code> kiểm tra process mà không gọi Redis.</li>
+          </ul></article>
+        </div>
+        <div class="outcome"><div class="outcome-label">Kết quả</div><p>Cùng một phiên bản ứng dụng chạy được ở nhiều môi trường bằng cách đổi cấu hình; liveness check không kéo theo dependency ngoài.</p></div>
+      </section>
+
+      <section class="slide" data-title="Đóng gói bằng Docker" aria-label="Slide 3: CP2 — Đóng gói bằng Docker">
+        <div class="eyebrow">Checkpoint 02 · Containerization</div>
+        <h1>Đóng gói bằng Docker</h1>
+        <p class="subtitle">Đưa ứng dụng và môi trường chạy vào một image nhất quán giữa local và server.</p>
+        <div class="content-grid">
+          <article class="panel problem"><div class="panel-label">Vấn đề</div><p>Ứng dụng chạy trên máy cá nhân chưa chắc chạy trên server. Image lớn làm deploy chậm; chạy bằng root hoặc đưa <code>.env</code> vào build context tạo thêm rủi ro.</p></article>
+          <article class="panel solution"><div class="panel-label">Tôi xử lý như thế nào</div><ul>
+            <li>Dùng multi-stage build để không mang công cụ build vào image runtime.</li>
+            <li>Chạy bằng user thường; đọc cổng từ <code>$PORT</code> và thêm healthcheck.</li>
+            <li>Bổ sung <code>.dockerignore</code>; dùng Compose chạy agent và Redis qua hostname service.</li>
+          </ul></article>
+        </div>
+        <div class="outcome"><div class="outcome-label">Kết quả</div><p>Ứng dụng được đóng gói cùng môi trường cần thiết, sẵn sàng chạy local và làm nền cho cloud deployment.</p></div>
+      </section>
+
+      <section class="slide" data-title="Bảo mật API và kiểm soát chi phí" aria-label="Slide 4: CP3 — Bảo mật API và kiểm soát chi phí">
+        <div class="eyebrow">Checkpoint 03 · API security</div>
+        <h1>Bảo vệ API &amp; chi phí</h1>
+        <p class="subtitle">Giới hạn quyền truy cập và kiểm soát mức sử dụng trước khi gọi LLM.</p>
+        <div class="content-grid">
+          <article class="panel problem"><div class="panel-label">Vấn đề</div><p>API công khai có thể bị gọi trái phép hoặc lạm dụng, làm tăng chi phí LLM. Rate limit đơn lẻ không giới hạn được tổng chi tiêu.</p></article>
+          <article class="panel solution"><div class="panel-label">Tôi xử lý như thế nào</div><ul>
+            <li>Yêu cầu API key và so sánh bằng <code>compare_digest</code>.</li>
+            <li>Dùng sliding-window rate limit theo từng người dùng.</li>
+            <li>Theo dõi ngân sách tháng; kiểm tra xác thực, tốc độ và ngân sách trước lời gọi LLM.</li>
+          </ul></article>
+        </div>
+        <div class="outcome"><div class="outcome-label">Kết quả</div><p>Request bị chặn trước khi gọi LLM; API phân biệt lỗi xác thực 401, vượt tốc độ 429 và vượt ngân sách 402.</p></div>
+      </section>
+
+      <section class="slide" data-title="Scale và độ tin cậy" aria-label="Slide 5: CP4 — Scale và độ tin cậy">
+        <div class="eyebrow">Checkpoint 04 · Reliability</div>
+        <h1>Scale &amp; độ tin cậy</h1>
+        <p class="subtitle">Giữ service nhất quán khi chạy nhiều instance hoặc khi một instance cần dừng.</p>
+        <div class="content-grid">
+          <article class="panel problem"><div class="panel-label">Vấn đề</div><p>Lịch sử trong RAM không được chia sẻ giữa các instance. Khi deploy hoặc Redis gặp sự cố, health check cần phân biệt process còn sống với service sẵn sàng nhận traffic.</p></article>
+          <article class="panel solution"><div class="panel-label">Tôi xử lý như thế nào</div><ul>
+            <li>Lưu lịch sử hội thoại trong Redis, giới hạn số message và đặt TTL.</li>
+            <li>Dùng <code>/health</code> cho liveness và <code>/ready</code> kiểm tra Redis/readiness.</li>
+            <li>Xử lý SIGTERM/SIGINT để báo shutdown và chuyển tiếp handler cũ.</li>
+          </ul></article>
+        </div>
+        <div class="outcome"><div class="outcome-label">Kết quả</div><p>Các instance chia sẻ lịch sử; load balancer có thể ngừng gửi traffic tới instance chưa sẵn sàng trong lúc khởi động hoặc shutdown.</p></div>
+      </section>
+
+      <section class="slide" data-title="Triển khai lên cloud" aria-label="Slide 6: CP5 — Triển khai lên cloud">
+        <div class="eyebrow">Checkpoint 05 · Cloud deployment</div>
+        <h1>Triển khai lên cloud</h1>
+        <p class="subtitle">Đưa service lên Render và xác minh API công khai hoạt động đúng.</p>
+        <div class="content-grid">
+          <article class="panel problem"><div class="panel-label">Vấn đề hiện tại</div><p>URL Render đã có và <code>/health</code> trả 200, nhưng <code>/ready</code> và <code>/ask</code> đang trả 500. Tài liệu hiện tại chưa xác nhận nguyên nhân.</p></article>
+          <article class="panel solution"><div class="panel-label">Tôi xử lý như thế nào</div><ul>
+            <li>Kiểm tra biến môi trường trên Render, nhất là <code>REDIS_URL</code> và cấu hình API key.</li>
+            <li>Đọc runtime log để tìm nguyên nhân 500 trước khi sửa; không đưa secret vào repository.</li>
+            <li>Sau khi cập nhật và redeploy, kiểm tra lại health, readiness và <code>/ask</code> có/không có key.</li>
+          </ul></article>
+        </div>
+        <div class="outcome"><div class="outcome-label">Hiện trạng</div><p>Service đang hoạt động một phần. Chỉ đánh dấu CP5 hoàn tất sau khi xác minh được nguyên nhân và kiểm tra lại các endpoint.</p></div>
+        <div class="status-note">Nguyên nhân lỗi chưa được xác minh</div>
+      </section>
+
+      <section class="slide" data-title="CI/CD tự động — phần Bonus" aria-label="Slide 7: CP6 — CI/CD tự động, phần Bonus">
+        <div class="eyebrow">Checkpoint 06 · Bonus CI/CD</div>
+        <h1>CI/CD tự động</h1>
+        <p class="subtitle">Tự động kiểm tra thay đổi trước khi deploy và lưu lại dấu vết của mỗi lần phát hành.</p>
+        <div class="content-grid">
+          <article class="panel problem"><div class="panel-label">Vấn đề</div><p>Deploy thủ công dễ bỏ qua test, khó biết commit nào đang chạy và có thể gặp lỗi chỉ xuất hiện khi build trên môi trường sạch.</p></article>
+          <article class="panel solution"><div class="panel-label">Tôi xử lý như thế nào</div><ul>
+            <li>Dùng GitHub Actions chạy test và build Docker image trên runner sạch.</li>
+            <li>Chỉ deploy khi test và build thành công; giới hạn deploy ở push lên <code>main</code>.</li>
+            <li>Lưu deploy hook trong GitHub Secrets và gọi smoke test <code>/health</code> sau deploy.</li>
+          </ul></article>
+        </div>
+        <div class="outcome"><div class="outcome-label">Kết quả</div><p>Workflow CI/CD đã có trong repository; cần kiểm tra trạng thái chạy thực tế trước khi kết luận pipeline đang xanh.</p></div>
+        <div class="status-note">CP6 là cách đánh số phần Bonus trong tài liệu</div>
+      </section>
+    </main>
+
+    <footer class="bottom-bar">
+      <div class="progress-wrap" aria-label="Tiến độ trình bày">
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="counter" id="counter">01 / 07</div>
+      </div>
+      <div class="dots" id="dots" aria-label="Chọn slide"></div>
+      <div class="hint">← → điều hướng &nbsp;·&nbsp; F toàn màn hình</div>
+      <div class="nav-buttons">
+        <button class="arrow-button" id="previousButton" type="button" aria-label="Slide trước" title="Slide trước (←)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <button class="arrow-button" id="nextButton" type="button" aria-label="Slide tiếp theo" title="Slide tiếp theo (→)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    (() => {
+      const slides = [...document.querySelectorAll('.slide')];
+      const dotsHost = document.getElementById('dots');
+      const counter = document.getElementById('counter');
+      const progressFill = document.getElementById('progressFill');
+      const previousButton = document.getElementById('previousButton');
+      const nextButton = document.getElementById('nextButton');
+      const fullscreenButton = document.getElementById('fullscreenButton');
+      const fullscreenLabel = fullscreenButton.querySelector('.fullscreen-label');
+      let current = 0;
+
+      const dots = slides.map((slide, index) => {
+        const button = document.createElement('button');
+        button.className = 'dot';
+        button.type = 'button';
+        button.setAttribute('aria-label', `Đi đến slide ${index + 1}: ${slide.dataset.title}`);
+        button.addEventListener('click', () => show(index));
+        dotsHost.append(button);
+        return button;
+      });
+
+      function show(index, updateHash = true) {
+        current = Math.max(0, Math.min(slides.length - 1, index));
+        slides.forEach((slide, i) => {
+          const active = i === current;
+          slide.classList.toggle('active', active);
+          slide.setAttribute('aria-hidden', String(!active));
+        });
+        dots.forEach((dot, i) => {
+          dot.classList.toggle('active', i === current);
+          dot.setAttribute('aria-current', i === current ? 'step' : 'false');
+        });
+        counter.textContent = `${String(current + 1).padStart(2, '0')} / ${String(slides.length).padStart(2, '0')}`;
+        progressFill.style.width = `${((current + 1) / slides.length) * 100}%`;
+        previousButton.disabled = current === 0;
+        nextButton.disabled = current === slides.length - 1;
+        if (updateHash) history.replaceState(null, '', `#slide-${current + 1}`);
+      }
+
+      previousButton.addEventListener('click', () => show(current - 1));
+      nextButton.addEventListener('click', () => show(current + 1));
+
+      async function toggleFullscreen() {
+        try {
+          if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
+          else await document.exitFullscreen();
+        } catch (error) {
+          fullscreenButton.title = 'Trình duyệt không cho phép bật toàn màn hình';
+        }
+      }
+
+      fullscreenButton.addEventListener('click', toggleFullscreen);
+      document.addEventListener('fullscreenchange', () => {
+        const active = Boolean(document.fullscreenElement);
+        fullscreenButton.setAttribute('aria-label', active ? 'Thoát toàn màn hình' : 'Bật toàn màn hình');
+        fullscreenLabel.textContent = active ? 'Thoát toàn màn hình' : 'Toàn màn hình';
+      });
+
+      document.addEventListener('keydown', event => {
+        if (event.altKey || event.ctrlKey || event.metaKey) return;
+        if (['ArrowRight', 'PageDown', ' '].includes(event.key)) {
+          event.preventDefault();
+          show(current + 1);
+        } else if (['ArrowLeft', 'PageUp'].includes(event.key)) {
+          event.preventDefault();
+          show(current - 1);
+        } else if (event.key === 'Home') {
+          show(0);
+        } else if (event.key === 'End') {
+          show(slides.length - 1);
+        } else if (event.key.toLowerCase() === 'f') {
+          toggleFullscreen();
+        }
+      });
+
+      let touchStartX = null;
+      const stage = document.getElementById('stage');
+      stage.addEventListener('touchstart', event => {
+        touchStartX = event.changedTouches[0].clientX;
+      }, { passive: true });
+      stage.addEventListener('touchend', event => {
+        if (touchStartX === null) return;
+        const delta = event.changedTouches[0].clientX - touchStartX;
+        if (Math.abs(delta) > 55) show(current + (delta < 0 ? 1 : -1));
+        touchStartX = null;
+      }, { passive: true });
+
+      const initial = Number(location.hash.match(/^#slide-(\d+)$/)?.[1]);
+      show(Number.isInteger(initial) && initial > 0 ? initial - 1 : 0, false);
+    })();
+  </script>
+</body>
+</html>

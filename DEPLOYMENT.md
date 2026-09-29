@@ -12,13 +12,14 @@
 
 | Field | Value |
 |---|---|
-| Public URL | Pending cloud deployment approval |
-| Platform | Render Blueprint |
-| Deployment date | Pending deployment |
+| Public URL | https://demodemo-tjrs.onrender.com |
+| Platform | Render Web Service (Docker, Free) |
+| Deployment date | Not recorded; service checked on 2026-09-29 |
 
-The Render configuration is prepared in `render.yaml`. The service has not yet
-been created or published. Replace the pending values above and add real command
-outputs after the service is deployed.
+The public service exists. The API is not yet passing CP5: `/health` and `/docs`
+respond, but `/ready` and `/ask` currently return HTTP 500. Check the Render
+environment variables and service logs, correct the configuration, and rerun
+the public tests before marking this checkpoint complete.
 
 The current Blueprint uses Render's free Key Value plan for a demo. Its data is
 in-memory and can be lost when the service restarts, so chat history is not
@@ -27,8 +28,8 @@ survive restarts; that may incur charges.
 
 ## Environment variables
 
-These names are planned for the Render web service. Secret values must be entered
-in the Render dashboard and must never be committed here.
+These variables must be configured on the Render web service. Secret values
+must be entered in the Render dashboard and must never be committed here.
 
 | Variable | Source |
 |---|---|
@@ -53,8 +54,17 @@ Docker build jobs succeed. Pull requests run CI but do not deploy.
 
 ## Verification
 
-Run these commands after publishing the service; replace `<PUBLIC_URL>` with the
-service URL and provide the deployed API key only in your local shell:
+The service was checked on 2026-09-29. Results from the public URL:
+
+| Request | Observed result |
+|---|---|
+| `GET /docs` | 200 |
+| `GET /health` | 200, `status: ok` |
+| `GET /ready` | 500 — expected 200 when Redis is reachable |
+| `POST /ask` without a key | 500 — expected 401 |
+
+After correcting the Render environment, run these commands with the service
+URL and provide the deployed API key only in your local shell:
 
 ```bash
 curl -i <PUBLIC_URL>/health
@@ -80,5 +90,7 @@ After deployment, save these screenshots in `screenshots/`:
 - `screenshots/dashboard.png` — Render service dashboard.
 - `screenshots/health.png` — successful public `/health` response.
 
-No public deployment output or screenshots are recorded yet because the Render
-service has not been created.
+The Render service is live, but these screenshots have not been added yet:
+
+- `screenshots/dashboard.png` — Render service dashboard.
+- `screenshots/health.png` — successful public `/health` response.
