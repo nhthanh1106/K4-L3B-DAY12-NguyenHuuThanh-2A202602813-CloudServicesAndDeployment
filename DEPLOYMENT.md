@@ -1,101 +1,84 @@
-# Thông Tin Deploy — Checkpoint 5
+# Deployment Report — Checkpoint 5
 
-> Điền file này sau khi deploy xong. `pytest tests/test_cp5.py` đọc file này
-> để tìm địa chỉ service của bạn và gọi thử.
->
-> **Chỉ ghi TÊN biến môi trường, tuyệt đối không dán giá trị API key vào đây.**
-> Repo này công khai — dán khóa vào là mất khóa.
+## Student
 
-## Thông Tin Học Viên
-
-| Mục | Nội dung |
-|-----|----------|
-| Họ và tên | (điền họ tên) |
-| Mã học viên | (điền mã học viên) |
-| Repo | (điền link repo K4-L3B-DAY12-HoVaTen-MSSV-CloudServicesAndDeployment) |
+| Field | Value |
+|---|---|
+| Name | Nguyen Huu Thanh |
+| Mã học viên | 2A202602813 |
+| Repository | https://github.com/nhthanh1106/K4-L3B-DAY12-NguyenHuuThanh-2A202602813-CloudServicesAndDeployment |
 
 ## Service
 
-| Mục | Nội dung |
-|-----|----------|
-| Public URL | https://TODO-thay-bang-url-that.up.railway.app |
-| Platform | Railway / Render / Cloud Run — (điền platform bạn dùng) |
-| Ngày deploy | (điền ngày) |
+| Field | Value |
+|---|---|
+| Public URL | Pending cloud deployment approval |
+| Platform | Render Blueprint |
+| Deployment date | Pending deployment |
 
-## Biến Môi Trường Đã Set Trên Cloud
+The Render configuration is prepared in `render.yaml`. The service has not yet
+been created or published. Replace the pending values above and add real command
+outputs after the service is deployed.
 
-Ghi tên biến và **nguồn giá trị**, không ghi giá trị:
+The current Blueprint uses Render's free Key Value plan for a demo. Its data is
+in-memory and can be lost when the service restarts, so chat history is not
+durable. Choose a paid persistent plan if the checkpoint requires data to
+survive restarts; that may incur charges.
 
-| Biến | Đã set | Ghi chú |
-|------|--------|---------|
-| `PORT` | ✅ | platform tự gán |
-| `AGENT_API_KEY` | ✅ | đặt trong dashboard, không nằm trong repo |
-| `REDIS_URL` | ✅ | (điền: Redis add-on của platform / Upstash / ...) |
-| `RATE_LIMIT_PER_MINUTE` | ✅ | 10 |
-| `MONTHLY_BUDGET_USD` | ✅ | 10.0 |
-| `LOG_LEVEL` | ✅ | INFO |
+## Environment variables
 
-## Lệnh Kiểm Tra
+These names are planned for the Render web service. Secret values must be entered
+in the Render dashboard and must never be committed here.
 
-Thay `<URL>` bằng Public URL ở trên:
+| Variable | Source |
+|---|---|
+| `PORT` | Assigned by Render |
+| `AGENT_API_KEY` | Render dashboard secret (`sync: false`) |
+| `REDIS_URL` | Internal connection string from the Render Key Value service |
+| `RATE_LIMIT_PER_MINUTE` | Render Blueprint default: `10` |
+| `MONTHLY_BUDGET_USD` | Render Blueprint default: `10.0` |
+| `LOG_LEVEL` | Render Blueprint default: `INFO` |
+
+## CI/CD deployment settings
+
+After creating the Render service, add these GitHub Actions settings:
+
+| GitHub setting | Value |
+|---|---|
+| Repository secret `RENDER_DEPLOY_HOOK_URL` | Render service deploy hook URL |
+| Repository variable `PUBLIC_URL` | Public HTTPS service URL |
+
+The workflow only triggers a deployment on pushes to `main`, after the test and
+Docker build jobs succeed. Pull requests run CI but do not deploy.
+
+## Verification
+
+Run these commands after publishing the service; replace `<PUBLIC_URL>` with the
+service URL and provide the deployed API key only in your local shell:
 
 ```bash
-# 1. Liveness — mong đợi 200 {"status":"ok"}
-curl -i <URL>/health
-
-# 2. Readiness — mong đợi 200 {"status":"ready"} (đã nối được Redis)
-curl -i <URL>/ready
-
-# 3. Không có API key — mong đợi 401
-curl -i -X POST <URL>/ask \
+curl -i <PUBLIC_URL>/health
+curl -i <PUBLIC_URL>/ready
+curl -i -X POST <PUBLIC_URL>/ask \
   -H "Content-Type: application/json" \
   -d '{"question":"Hello"}'
-
-# 4. Có API key — mong đợi 200 kèm câu trả lời
-curl -i -X POST <URL>/ask \
+curl -i -X POST <PUBLIC_URL>/ask \
   -H "Content-Type: application/json" \
   -H "X-API-Key: $AGENT_API_KEY" \
   -H "X-User-Id: sv-test" \
   -d '{"question":"Deploy là gì?"}'
-
-# 5. Rate limit — gọi 15 lần, những lần cuối phải trả 429
-for i in $(seq 1 15); do
-  curl -s -o /dev/null -w "%{http_code} " -X POST <URL>/ask \
-    -H "Content-Type: application/json" \
-    -H "X-API-Key: $AGENT_API_KEY" \
-    -H "X-User-Id: sv-test" \
-    -d '{"question":"test"}'
-done; echo
 ```
 
-## Kết Quả Chạy Thật
+Expected responses: `/health` returns 200, `/ready` returns 200 when Redis is
+reachable, `/ask` without a key returns 401, and `/ask` with the correct key
+returns 200 with a mock answer.
 
-Dán output của các lệnh trên vào đây:
+## Screenshots
 
-```
-(điền output)
-```
+After deployment, save these screenshots in `screenshots/`:
 
-## Ảnh Chụp Màn Hình
+- `screenshots/dashboard.png` — Render service dashboard.
+- `screenshots/health.png` — successful public `/health` response.
 
-Đặt ảnh trong thư mục `screenshots/`:
-
-- `screenshots/dashboard.png` — trang quản lý service trên platform
-- `screenshots/health.png` — kết quả gọi `/health` từ trình duyệt hoặc curl
-
----
-
-## Nếu Dùng Phương Án Dự Phòng
-
-Không đăng ký được tài khoản cloud? Vẫn nộp được bài, nhưng CP5 tối đa 60% điểm:
-
-1. Đặt `LOCAL_FALLBACK=true` trong `.env`
-2. Chạy `docker compose up -d` rồi kiểm tra `docker compose ps`
-3. Chụp màn hình vào `screenshots/`
-4. Chạy `pytest tests/test_cp5.py -v` — bộ test sẽ tự chuyển sang kiểm tra
-   `http://localhost:8000`
-5. Ghi rõ lý do không deploy được vào phần dưới đây:
-
-```
-(điền lý do nếu dùng phương án dự phòng, ngược lại xóa mục này)
-```
+No public deployment output or screenshots are recorded yet because the Render
+service has not been created.

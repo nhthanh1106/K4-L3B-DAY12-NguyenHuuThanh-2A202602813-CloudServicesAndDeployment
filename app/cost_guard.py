@@ -32,9 +32,8 @@ class CostGuard:
     def spent(self, user_id: str, month: str | None = None) -> float:
         """Số tiền user đã tiêu trong tháng.
 
-        TODO (CP3): đọc ``self.client.get(self._key(user_id, month))``.
-        Key chưa tồn tại → Redis trả None → hàm này phải trả ``0.0``.
-        Nhớ ép kiểu ``float(...)`` vì Redis trả về chuỗi.
+        Key chưa tồn tại thì Redis trả ``None`` và hàm trả ``0.0``. Giá trị
+        Redis được đổi sang ``float`` trước khi trả về.
         """
         value = self.client.get(self._key(user_id, month))
         return float(value) if value is not None else 0.0
@@ -47,8 +46,8 @@ class CostGuard:
     ) -> None:
         """Cho qua nếu còn ngân sách, ngược lại raise 402.
 
-        TODO (CP3): nếu ``spent(user_id) + estimated_cost > self.budget``
-        → raise ``HTTPException(status_code=402, detail="monthly budget exceeded")``.
+        Nếu chi phí đã dùng cộng với chi phí ước tính vượt ngân sách thì trả
+        ``HTTPException(status_code=402, detail="monthly budget exceeded")``.
         402 = Payment Required, đúng ngữ nghĩa cho tình huống hết ngân sách.
         """
         if self.spent(user_id, month) + estimated_cost > self.budget:
@@ -60,10 +59,7 @@ class CostGuard:
     def record(self, user_id: str, cost: float, month: str | None = None) -> float:
         """Cộng dồn chi phí vừa phát sinh, trả về tổng mới.
 
-        TODO (CP3):
-          1. ``total = self.client.incrbyfloat(key, cost)``
-          2. ``self.client.expire(key, KEY_TTL_SECONDS)``
-          3. ``return float(total)``
+        Cộng chi phí, gia hạn TTL đối soát và trả tổng mới.
         """
         key = self._key(user_id, month)
         total = self.client.incrbyfloat(key, cost)
